@@ -21,6 +21,7 @@ WORKDIR /code
 COPY ./pyproject.toml ./README.md ./uv.lock* ./
 
 COPY ./app ./app
+COPY ./app_ui.py ./app_ui.py
 
 RUN uv sync --frozen
 
