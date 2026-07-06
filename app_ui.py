@@ -178,13 +178,28 @@ with tab1:
                             if text_part:
                                 tutor_response += text_part
                             
-                    # Detect RequestInput interruption
+                    # Detect RequestInput interruption (direct or wrapped in function_call)
+                    interrupt_id = None
+                    msg_text = None
+                    
                     if hasattr(event, "interrupt_id"):
-                        if event.interrupt_id == "teacher_approval":
+                        interrupt_id = event.interrupt_id
+                        msg_text = getattr(event, "message", None)
+                    elif hasattr(event, "content") and event.content and event.content.parts:
+                        for part in event.content.parts:
+                            if part.function_call and part.function_call.name == "adk_request_input":
+                                fc = part.function_call
+                                args = fc.args or {}
+                                interrupt_id = args.get("interruptId") or args.get("interrupt_id") or fc.id
+                                msg_text = args.get("message")
+                                break
+                                
+                    if interrupt_id:
+                        if interrupt_id == "teacher_approval":
                             interrupted = True
-                        elif event.interrupt_id.startswith("quiz_q_"):
-                            st.session_state.active_interrupt = event.interrupt_id
-                            tutor_response = event.message
+                        elif interrupt_id.startswith("quiz_q_"):
+                            st.session_state.active_interrupt = interrupt_id
+                            tutor_response = msg_text
                 
                 if interrupted:
                     st.session_state.pending_approval = True
