@@ -11,8 +11,10 @@ We built a premium, minimal Streamlit chat interface inside [app_ui.py](app_ui.p
   - **Session Progress Logs**: Table displaying the PII-scrubbed summaries logged in `progress_log.csv` (recording student_id, date, and accomplishments).
 - **✨ Clean Output Filtering**: Resolved GenAI intermediate node outputs leakage (such as raw JSON logs from `tutor_agent` or `guardrail_agent`) by filtering event streams. The chat interfaces now selectively capture and render only content emitted by the `output_sender` node.
 - **🔄 Session Resumability**: Correctly wired student quiz response resumptions and parent approval resumptions using standard GenAI `types.Content` and `types.FunctionResponse` parts compatible with the sync `Runner.run()` signature.
+- **📱 Inline Input Form**: Migrated the chat input field to an inline Streamlit form directly below the message list instead of using a viewport-pinned page-level chat input. This ensures the student input bar is only visible on the **Student Chat** tab and disappears completely when switching to the **Parent / Teacher Portal**, resolving visual layout confusion.
 
 ![Study Buddy UI](second_question_check.png)
+![Parent Portal Clean Tab](portal_clean_tab.png)
 
 ### Live Google Cloud Run Deployment
 The interactive web portal is deployed and running live on Google Cloud Run:
