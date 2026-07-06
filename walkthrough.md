@@ -68,12 +68,20 @@ uv run pytest tests/test_agent.py
 ### pytest Execution Log
 ```
 ============================= test session starts =============================
-platform win32 -- Python 3.13.14, pytest-9.1.1, pluggy-1.6.0
-rootdir: D:\Capstone Project 2\studybuddy-agent
-collected 13 items
+platform win32 -- Python 3.13.0, pytest-9.1.1, pluggy-1.6.0
+rootdir: d:\Capstone Project 2\studybuddy-agent
+collected 15 items
 
-tests\test_agent.py .............                                        [100%]
+tests\test_agent.py ...............                                      [100%]
 
-======================== 13 passed in 4.34s ====================================
+============================= 15 passed in 5.29s ==============================
 ```
-All 13 outcome-based validation assertions pass successfully.
+All 15 outcome-based validation assertions pass successfully.
+
+---
+
+## 6. Greeting & Out-of-Scope Intent Routing
+To prevent the tutor from forcing students directly into diagnostic quizzes or math lessons when they engage in small talk or ask general questions:
+- **Greeting Node**: Detects general introductions (like "hi", "hello") and routes to a welcoming conversational node that prompts the student to choose between Fractions and Decimals.
+- **Out of Scope Node**: Politeness boundary that intercepts out-of-scope math (e.g. "1+1=3") or general queries (e.g. history, coding) and redirects the student back to our core fractions and decimals subjects.
+- **Improved Intent Classifier**: Expanded `IntentVerdict` to support `greeting` and `out_of_scope` categories, ensuring proper workflow orchestration.

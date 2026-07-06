@@ -172,7 +172,7 @@ with tab1:
                 
                 for event in events:
                     # Detect intermediate / final model texts ONLY from output_sender
-                    if event.node_name == "output_sender":
+                    if getattr(event, "node_name", None) == "output_sender":
                         if hasattr(event, "content") and event.content and event.content.parts:
                             text_part = "".join(part.text for part in event.content.parts if part.text)
                             if text_part:

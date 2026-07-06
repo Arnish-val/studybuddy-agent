@@ -62,7 +62,7 @@ class RiskVerdict(BaseModel):
 
 
 class IntentVerdict(BaseModel):
-    intent: str = Field(description="Intent class: 'new_topic', 'question', or 'progress_check'.")
+    intent: str = Field(description="Intent class: 'new_topic', 'question', 'progress_check', 'greeting', or 'out_of_scope'.")
 
 
 class DiagnosticQuestion(BaseModel):
@@ -433,9 +433,12 @@ intent_classifier = LlmAgent(
         retry_options=types.HttpRetryOptions(attempts=3),
     ),
     instruction=(
-        "You are an intent router for a study agent. Classify the user's message into one of three intents:\n"
-        "- 'new_topic': The student is asking to learn or be tested on a new topic, or starts a new session.\n"
-        "- 'question': The student has a specific question, asks for an explanation, or replies to a tutor problem.\n"
+        "You are an intent router for a middle school math study agent specializing ONLY in fractions and decimals.\n"
+        "Classify the user's message into one of these intents:\n"
+        "- 'greeting': General greetings, small talk, or introductions (e.g., 'hi', 'hello', 'how are you', 'hey').\n"
+        "- 'out_of_scope': General math outside middle-school fractions/decimals (e.g., '1+1=3', '2+2'), or general knowledge queries unrelated to fractions/decimals (e.g. science, history, coding).\n"
+        "- 'new_topic': The student specifically asks to start learning, study, or take a quiz on fractions or decimals.\n"
+        "- 'question': The student asks a specific math question about fractions or decimals, or responds to a practice problem.\n"
         "- 'progress_check': The student or parent asks for progress, score, session summary, or how things are going.\n"
     ),
     output_schema=IntentVerdict,
@@ -444,14 +447,16 @@ intent_classifier = LlmAgent(
 
 @node(rerun_on_resume=True)
 async def router_node(ctx: Context, node_input: StudentTurn) -> Event:
-    msg = node_input.message.lower()
+    msg = node_input.message.lower().strip()
     intent = None
 
     # Keyword check
-    if any(k in msg for k in ["quiz", "test me", "diagnostic", "new topic", "study", "learn", "start"]):
-        intent = "new_topic"
+    if msg in ["hi", "hello", "hey", "how are you", "greetings", "yo"]:
+        intent = "greeting"
     elif any(k in msg for k in ["how am i doing", "progress", "report", "grade", "score", "summary"]):
         intent = "progress_check"
+    elif any(k in msg for k in ["quiz", "test me", "diagnostic", "new topic", "study", "learn", "start"]):
+        intent = "new_topic"
     elif any(k in msg for k in ["what is", "why", "how do", "explain", "question", "help me with"]):
         intent = "question"
 
@@ -461,10 +466,29 @@ async def router_node(ctx: Context, node_input: StudentTurn) -> Event:
         verdict = IntentVerdict(**res)
         intent = verdict.intent
 
-    if intent not in ["new_topic", "question", "progress_check"]:
+    if intent not in ["new_topic", "question", "progress_check", "greeting", "out_of_scope"]:
         intent = "question"
 
     return Event(output=node_input, route=intent, state={"intent": intent})
+
+
+@node
+def greeting_node(ctx: Context, node_input: StudentTurn) -> Event:
+    response_msg = (
+        "Hello! 👋 I am your Study Buddy AI Tutor. I specialize in helping you learn and practice "
+        "**Fractions** and **Decimals**! \n\n"
+        "Which of these subjects would you like to focus on today? (Just let me know when you're ready to start!)"
+    )
+    return Event(output={"response": response_msg})
+
+
+@node
+def out_of_scope_node(ctx: Context, node_input: StudentTurn) -> Event:
+    response_msg = (
+        "I can only help you with middle school **Fractions** and **Decimals** concepts. \n\n"
+        "Let's focus on those! Would you like to study fractions or decimals today?"
+    )
+    return Event(output={"response": response_msg})
 
 
 diagnostic_generator = LlmAgent(
@@ -753,8 +777,14 @@ root_agent = Workflow(
         (router_node, {
             "new_topic": diagnostic_generator,
             "question": tutor_node,
-            "progress_check": progress_node
+            "progress_check": progress_node,
+            "greeting": greeting_node,
+            "out_of_scope": out_of_scope_node
         }),
+        
+        # Greeting and out-of-scope nodes go to output
+        (greeting_node, output_sender),
+        (out_of_scope_node, output_sender),
         
         # Diagnostic routing
         (diagnostic_generator, diagnostic_node),
