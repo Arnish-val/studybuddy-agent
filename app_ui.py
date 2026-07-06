@@ -117,9 +117,20 @@ with tab1:
             st.write(msg["text"])
 
     # Handle Input from Chat Box
-    user_input = st.chat_input("Type your response or question here...")
-    
-    if user_input:
+    user_input = None
+    with st.form(key="chat_form", clear_on_submit=True):
+        col1, col2 = st.columns([5, 1])
+        with col1:
+            raw_input = st.text_input(
+                "Your message:",
+                placeholder="Type your response or question here...",
+                label_visibility="collapsed"
+            )
+        with col2:
+            submit_button = st.form_submit_button(label="Send", use_container_width=True)
+            
+    if submit_button and raw_input:
+        user_input = raw_input
         # Append Student turn to history
         st.session_state.chat_history.append({"role": "user", "text": user_input})
         with st.chat_message("user"):
