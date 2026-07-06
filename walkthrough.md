@@ -93,3 +93,6 @@ To prevent the tutor from forcing students directly into diagnostic quizzes or m
 
 #### 2. Out-of-Scope Intent:
 ![Tutor Out of Scope Redirection](out_of_scope_response.png)
+
+#### 3. Diagnostic Quiz Rendering:
+![Tutor Diagnostic Quiz Rendering](quiz_rendered.png)
