@@ -85,3 +85,11 @@ To prevent the tutor from forcing students directly into diagnostic quizzes or m
 - **Greeting Node**: Detects general introductions (like "hi", "hello") and routes to a welcoming conversational node that prompts the student to choose between Fractions and Decimals.
 - **Out of Scope Node**: Politeness boundary that intercepts out-of-scope math (e.g. "1+1=3") or general queries (e.g. history, coding) and redirects the student back to our core fractions and decimals subjects.
 - **Improved Intent Classifier**: Expanded `IntentVerdict` to support `greeting` and `out_of_scope` categories, ensuring proper workflow orchestration.
+
+### Interactive Live verification:
+
+#### 1. Greeting Intent:
+![Tutor Greeting Response](greeting_response.png)
+
+#### 2. Out-of-Scope Intent:
+![Tutor Out of Scope Redirection](out_of_scope_response.png)
