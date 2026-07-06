@@ -1,0 +1,10 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: detect-private-key
+  - repo: https://github.com/semgrep/semgrep
+    rev: v1.79.0
+    hooks:
+      - id: semgrep
+        args: ['--config', '.semgrep.yaml', '--error']

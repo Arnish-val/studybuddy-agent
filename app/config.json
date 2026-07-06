@@ -1,0 +1,26 @@
+{
+  "model_name": "gemini-3.1-flash-lite",
+  "flagged_patterns": [
+    "die",
+    "hurt myself",
+    "kill myself",
+    "suicide",
+    "depressed",
+    "worthless",
+    "give me the answer",
+    "tell me the answer",
+    "what is the answer",
+    "bypass",
+    "system prompt",
+    "ignore previous instructions"
+  ],
+  "risk_threshold": "high",
+  "safety_guardrails": {
+    "disallowed_phrases": [
+      "the correct answer is",
+      "here is the solution",
+      "the final answer is"
+    ],
+    "max_guardrail_regenerations": 1
+  }
+}

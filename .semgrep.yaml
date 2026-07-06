@@ -1,0 +1,14 @@
+rules:
+  - id: hardcoded-google-api-key
+    patterns:
+      - pattern-either:
+          - pattern: api_key = "$VAL"
+          - pattern: API_KEY = "$VAL"
+          - pattern: api_key="$VAL"
+          - pattern: API_KEY="$VAL"
+      - metavariable-regex:
+          metavariable: $VAL
+          regex: "AIzaSy[A-Za-z0-9_\\-]{15,40}"
+    message: "Detected a hardcoded Google API Key! Do not commit secrets to source control. Load them from the environment or .env instead."
+    languages: [python]
+    severity: ERROR
