@@ -133,8 +133,6 @@ with tab1:
         user_input = raw_input
         # Append Student turn to history
         st.session_state.chat_history.append({"role": "user", "text": user_input})
-        with st.chat_message("user"):
-            st.write(user_input)
 
         # Check if there is an active interrupt we are responding to
         new_message = None
@@ -219,17 +217,22 @@ with tab1:
                         "A parent or teacher needs to approve this message before you can proceed."
                     )
                     st.session_state.chat_history.append({"role": "assistant", "text": warning_msg})
-                    with st.chat_message("assistant"):
-                        st.warning(warning_msg)
                 elif tutor_response:
                     st.session_state.chat_history.append({"role": "assistant", "text": tutor_response})
-                    with st.chat_message("assistant"):
-                        st.write(tutor_response)
                 else:
-                    st.write("Tutor processed input successfully.")
+                    st.session_state.chat_history.append({
+                        "role": "assistant",
+                        "text": "Tutor processed input successfully."
+                    })
                     
             except Exception as e:
-                st.error(f"Error calling workflow agent: {e}")
+                st.session_state.chat_history.append({
+                    "role": "assistant",
+                    "text": f"❌ Error calling workflow agent: {e}"
+                })
+        
+        # Instantly rerun to redraw the entire page with updated history above the form
+        st.rerun()
 
 # ----------------- Tab 2: Parent / Teacher Portal -----------------
 with tab2:
