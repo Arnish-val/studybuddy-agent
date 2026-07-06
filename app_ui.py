@@ -115,115 +115,6 @@ with tab1:
     for msg in st.session_state.chat_history:
         with st.chat_message(msg["role"]):
             st.write(msg["text"])
-
-    # Handle Input from Chat Box
-    user_input = st.chat_input("Type your response or question here...")
-    
-    if user_input:
-        # Append Student turn to history
-        st.session_state.chat_history.append({"role": "user", "text": user_input})
-
-        # Check if there is an active interrupt we are responding to
-        new_message = None
-        if st.session_state.get("active_interrupt"):
-            interrupt_id = st.session_state.active_interrupt
-            st.session_state.active_interrupt = None
-            new_message = types.Content(
-                role="user",
-                parts=[
-                    types.Part(
-                        function_response=types.FunctionResponse(
-                            name=interrupt_id,
-                            id=interrupt_id,
-                            response={"value": user_input}
-                        )
-                    )
-                ]
-            )
-        else:
-            # Prepare Payload
-            payload = {
-                "student_id": st.session_state.student_id,
-                "message": user_input,
-                "subject": subject,
-                "timestamp": datetime.datetime.utcnow().isoformat()
-            }
-            # Build new GenAI Content payload for workflow entry
-            new_message = types.Content(
-                role="user",
-                parts=[types.Part.from_text(text=json.dumps(payload))]
-            )
-
-        # Invoke Runner
-        with st.spinner("Tutor is thinking..."):
-            try:
-                events = list(st.session_state.runner.run(
-                    new_message=new_message,
-                    user_id="demo_user",
-                    session_id=st.session_state.session_id,
-                    run_config=RunConfig(streaming_mode=StreamingMode.SSE)
-                ))
-                
-                # Check for interrupts or outputs
-                tutor_response = ""
-                interrupted = False
-                
-                for event in events:
-                    # Detect intermediate / final model texts ONLY from output_sender
-                    if getattr(event, "node_name", None) == "output_sender":
-                        if hasattr(event, "content") and event.content and event.content.parts:
-                            text_part = "".join(part.text for part in event.content.parts if part.text)
-                            if text_part:
-                                tutor_response += text_part
-                            
-                    # Detect RequestInput interruption (direct or wrapped in function_call)
-                    interrupt_id = None
-                    msg_text = None
-                    
-                    if hasattr(event, "interrupt_id"):
-                        interrupt_id = event.interrupt_id
-                        msg_text = getattr(event, "message", None)
-                    elif hasattr(event, "content") and event.content and event.content.parts:
-                        for part in event.content.parts:
-                            if part.function_call and part.function_call.name == "adk_request_input":
-                                fc = part.function_call
-                                args = fc.args or {}
-                                interrupt_id = args.get("interruptId") or args.get("interrupt_id") or fc.id
-                                msg_text = args.get("message")
-                                break
-                                
-                    if interrupt_id:
-                        if interrupt_id == "teacher_approval":
-                            interrupted = True
-                        elif interrupt_id.startswith("quiz_q_"):
-                            st.session_state.active_interrupt = interrupt_id
-                            tutor_response = msg_text
-                
-                if interrupted:
-                    st.session_state.pending_approval = True
-                    warning_msg = (
-                        "⚠️ **Safety Alert**: Your message has been flagged for safety review. "
-                        "A parent or teacher needs to approve this message before you can proceed."
-                    )
-                    st.session_state.chat_history.append({"role": "assistant", "text": warning_msg})
-                elif tutor_response:
-                    st.session_state.chat_history.append({"role": "assistant", "text": tutor_response})
-                else:
-                    st.session_state.chat_history.append({
-                        "role": "assistant",
-                        "text": "Tutor processed input successfully."
-                    })
-                    
-            except Exception as e:
-                st.session_state.chat_history.append({
-                    "role": "assistant",
-                    "text": f"❌ Error calling workflow agent: {e}"
-                })
-        
-        # Instantly rerun to redraw the entire page with updated history above the form
-        st.rerun()
-
-# ----------------- Tab 2: Parent / Teacher Portal -----------------
 with tab2:
     col1, col2 = st.columns([2, 1])
     
@@ -360,7 +251,7 @@ with tab2:
                                 if res_text:
                                     st.session_state.chat_history.append({"role": "assistant", "text": res_text})
                             st.rerun()
-
+ 
         # Decrypted historical safety log table
         st.markdown("### Decrypted Historical Audits")
         historical_reviews = [r for r in all_reviews if r.get("status") != "pending"]
@@ -368,7 +259,7 @@ with tab2:
             st.table(historical_reviews)
         else:
             st.info("No resolved safety review history recorded yet.")
-
+ 
     with col2:
         st.subheader("📊 Session Progress Logs")
         
@@ -382,3 +273,110 @@ with tab2:
         # Add a refresh button for log database
         if st.button("Refresh Logs"):
             st.rerun()
+
+# ----------------- Global Chat Input (outside tabs) -----------------
+user_input = st.chat_input("Type your response or question here...")
+
+if user_input:
+    # Append Student turn to history
+    st.session_state.chat_history.append({"role": "user", "text": user_input})
+
+    # Check if there is an active interrupt we are responding to
+    new_message = None
+    if st.session_state.get("active_interrupt"):
+        interrupt_id = st.session_state.active_interrupt
+        st.session_state.active_interrupt = None
+        new_message = types.Content(
+            role="user",
+            parts=[
+                types.Part(
+                    function_response=types.FunctionResponse(
+                        name=interrupt_id,
+                        id=interrupt_id,
+                        response={"value": user_input}
+                    )
+                )
+            ]
+        )
+    else:
+        # Prepare Payload
+        payload = {
+            "student_id": st.session_state.student_id,
+            "message": user_input,
+            "subject": subject,
+            "timestamp": datetime.datetime.utcnow().isoformat()
+        }
+        # Build new GenAI Content payload for workflow entry
+        new_message = types.Content(
+            role="user",
+            parts=[types.Part.from_text(text=json.dumps(payload))]
+        )
+
+    # Invoke Runner
+    with st.spinner("Tutor is thinking..."):
+        try:
+            events = list(st.session_state.runner.run(
+                new_message=new_message,
+                user_id="demo_user",
+                session_id=st.session_state.session_id,
+                run_config=RunConfig(streaming_mode=StreamingMode.SSE)
+            ))
+            
+            # Check for interrupts or outputs
+            tutor_response = ""
+            interrupted = False
+            
+            for event in events:
+                # Detect intermediate / final model texts ONLY from output_sender
+                if getattr(event, "node_name", None) == "output_sender":
+                    if hasattr(event, "content") and event.content and event.content.parts:
+                        text_part = "".join(part.text for part in event.content.parts if part.text)
+                        if text_part:
+                            tutor_response += text_part
+                        
+                # Detect RequestInput interruption (direct or wrapped in function_call)
+                interrupt_id = None
+                msg_text = None
+                
+                if hasattr(event, "interrupt_id"):
+                    interrupt_id = event.interrupt_id
+                    msg_text = getattr(event, "message", None)
+                elif hasattr(event, "content") and event.content and event.content.parts:
+                    for part in event.content.parts:
+                        if part.function_call and part.function_call.name == "adk_request_input":
+                            fc = part.function_call
+                            args = fc.args or {}
+                            interrupt_id = args.get("interruptId") or args.get("interrupt_id") or fc.id
+                            msg_text = args.get("message")
+                            break
+                            
+                if interrupt_id:
+                    if interrupt_id == "teacher_approval":
+                        interrupted = True
+                    elif interrupt_id.startswith("quiz_q_"):
+                        st.session_state.active_interrupt = interrupt_id
+                        tutor_response = msg_text
+            
+            if interrupted:
+                st.session_state.pending_approval = True
+                warning_msg = (
+                    "⚠️ **Safety Alert**: Your message has been flagged for safety review. "
+                    "A parent or teacher needs to approve this message before you can proceed."
+                )
+                st.session_state.chat_history.append({"role": "assistant", "text": warning_msg})
+            elif tutor_response:
+                st.session_state.chat_history.append({"role": "assistant", "text": tutor_response})
+            else:
+                st.session_state.chat_history.append({
+                    "role": "assistant",
+                    "text": "Tutor processed input successfully."
+                })
+                
+        except Exception as e:
+            st.session_state.chat_history.append({
+                "role": "assistant",
+                "text": f"❌ Error calling workflow agent: {e}"
+            })
+    
+    # Instantly rerun to redraw the entire page with updated history above the form
+    st.rerun()
